@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link id="favicon" rel="icon" href="https://www.google.com/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="tabTitle">ChingMing's Lair</title>
+
+<style>
+/* --- THEME ENGINE --- */
+:root {
+    --bg: #050505;
+    --panel: linear-gradient(145deg, #181818, #0a0a0a);
+    --accent: #fff;
+    --text: #e0e0e0;
+    --btn: linear-gradient(180deg, #2a2a2a, #161616);
+    --border: #333;
+    --glow: rgba(255,255,255,0.25);
+    --switch-off: #333;
+    --switch-on: #fff;
+}
+
+[data-theme="default"][data-light="true"] {
+    --bg: #f0f0f0;
+    --panel: #ffffff;
+    --accent: #000;
+    --text: #1a1a1a;
+    --btn: #e0e0e0;
+    --border: #ccc;
+    --glow: rgba(0,0,0,0.1);
+    --switch-off: #bbb;
+    --switch-on: #000;
+}
+
+[data-theme="blue-aura"] {
+    --bg: #000810;
+    --panel: rgba(0, 20, 40, 0.85);
+    --accent: #00e5ff;
+    --text: #e0faff;
+    --btn: rgba(0, 229, 255, 0.1);
+    --border: #00e5ff;
+    --glow: rgba(0, 229, 255, 0.4);
+}
+
+[data-theme="sakura"] {
+    --bg: #1a0f1a;
+    --panel: rgba(45, 27, 46, 0.9);
+    --accent: #ffb7c5;
+    --text: #ffe5ec;
+    --btn: #5e3661;
+    --border: #ff85a1;
+    --glow: rgba(255, 183, 197, 0.5);
+}
+
+[data-theme="hacker"] {
+    --bg: #000;
+    --panel: rgba(5, 5, 5, 0.9);
+    --accent: #00ff41;
+    --text: #00ff41;
+    --btn: #001100;
+    --border: #003300;
+    --glow: rgba(0, 255, 65, 0.3);
+}
+
+/* --- UI STYLES --- */
+* { box-sizing: border-box; font-family: "JetBrains Mono", monospace; transition: background 0.3s, color 0.3s; }
+body { margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--bg); color: var(--text); }
+
+.fade-out { opacity: 0 !important; transition: opacity 0.8s ease-out; pointer-events: none; }
+.swipe-up { transform: translateY(-100%); transition: transform 0.9s cubic-bezier(0.7, 0, 0.2, 1); }
+
+#bootScreen { position: fixed; inset: 0; background: #000; z-index: 10001; padding: 40px; display: flex; flex-direction: column; }
+#bootLog { width: 100%; flex-grow: 1; overflow-y: auto; color: #fff; font-size: 11px; line-height: 1.4; margin-bottom: 20px; scroll-behavior: smooth; }
+.progress-wrapper { width: 100%; max-width: 600px; margin: 0 auto; text-align: center; }
+.progress-container { width: 100%; height: 4px; background: #111; overflow: hidden; margin-top: 10px; }
+.progress-bar { width: 0%; height: 100%; background: #fff; transition: width 0.1s linear; }
+#bootPercent { font-size: 14px; color: #fff; font-weight: bold; }
+
+#passwordOverlay { position: fixed; inset: 0; background: #0a0a0a; z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.8s ease; }
+#passwordOverlay.visible { opacity: 1; pointer-events: all; }
+
+.app { position: relative; display: none; width: 95%; max-width: 900px; height: 85vh; padding: 40px; background: var(--panel); border: 1px solid var(--border); overflow-y: auto; z-index: 5; backdrop-filter: blur(10px); }
+.section { display: none; position: absolute; inset: 0; padding: 35px; flex-direction: column; background: transparent; }
+
+button { width: 100%; padding: 14px; background: var(--btn); border: 1px solid var(--border); color: var(--text); cursor: pointer; margin-bottom: 10px; font-weight: bold; box-shadow: 0 4px 0 #000; text-transform: uppercase; }
+button:hover { filter: brightness(1.2); transform: translateY(-1px); }
+input, select { width: 100%; padding: 14px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text); margin-bottom: 12px; outline: none; }
+
+#customMenu { position: fixed; display: none; z-index: 10000; background: #1a1a1a; border: 1px solid #fff; box-shadow: 5px 5px 0 #000; }
+#customMenu button { margin: 0; padding: 10px 20px; width: auto; border: none; box-shadow: none; font-size: 12px; color: white !important; }
+#customMenu button:hover { background: #ff0000; }
+
+#errorMsg { color: #ff4444; font-size: 12px; margin-top: 10px; height: 15px; font-weight: bold; visibility: hidden; text-transform: uppercase; }
+
+.switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background-color: var(--switch-off); border: 1px solid var(--border); transition: 0.3s; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--text); transition: .3s; }
+input:checked + .slider { background-color: var(--switch-on); }
+input:checked + .slider:before { transform: translateX(24px); background-color: var(--bg); }
+.switch-locked { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+#themeCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+
+#transitionScreen { position: fixed; inset: 0; background: var(--bg); z-index: 9998; display: none; flex-direction: column; align-items: center; justify-content: center; }
+.dot-container { display: flex; gap: 10px; }
+.dot { width: 14px; height: 14px; background: var(--accent); }
+@keyframes dotPulse { 0%, 80%, 100% { transform: scale(0); opacity: 0; } 40% { transform: scale(1); opacity: 1; } }
+
+#frogieList, #gamesList, #bookmarkList { flex-grow: 1; overflow-y: auto; background: rgba(0,0,0,0.1); border: 1px solid var(--border); padding: 15px; margin: 15px 0; }
+.back-btn { width: 100px !important; margin: 0 !important; }
+</style>
+</head>
+<body data-theme="default" data-light="false">
+
+<canvas id="themeCanvas"></canvas>
+
+<div id="customMenu"><button id="delBmBtn">REMOVE</button></div>
+
+<div id="bootScreen">
+    <div id="bootLog"></div>
+    <div class="progress-wrapper">
+        <div id="bootPercent">0%</div>
+        <div class="progress-container"><div id="bootBar" class="progress-bar"></div></div>
+    </div>
+</div>
+
+<div id="transitionScreen">
+    <div class="dot-container">
+        <div class="dot" style="animation: dotPulse 1.4s infinite;"></div>
+        <div class="dot" style="animation: dotPulse 1.4s infinite 0.2s;"></div>
+        <div class="dot" style="animation: dotPulse 1.4s infinite 0.4s;"></div>
+    </div>
+    <div id="transitionTip" style="margin-top:20px; font-size: 14px;">Preparing environment...</div>
+</div>
+
+<div id="passwordOverlay">
+   <div style="padding:45px; background:#111; border:1px solid #333; text-align:center; width:350px;">
+      <h2 style="color:#fff; letter-spacing:4px; font-size:18px; margin-bottom:20px;">SYSTEM LOCKED</h2>
+      <input id="passInput" type="password" placeholder="Keyphrase">
+      <button id="loginBtn">Decrypt</button>
+      <div id="errorMsg">Invalid Password</div>
+   </div>
+</div>
+
+<div class="app" id="appContainer">
+   <div id="mainPage">
+      <h2 style="letter-spacing:6px; text-align: center;">CHINGMING'S LAIR</h2>
+      <input id="customUrl" type="text" placeholder="Enter Site URL (e.g. google.com)">
+      <button id="openCustom">Launch Site</button>
+      <hr style="border:0; border-top:1px solid var(--border); margin: 25px 0;">
+      <button onclick="nav('frogiePage')">Frogie's Arcade</button>
+      <button onclick="nav('gamesPage')">Games Library</button>
+      <button onclick="nav('bookmarkPage')">System Bookmarks</button>
+      <button onclick="nav('cloakPage')">Cloaking & Stealth</button>
+      <button onclick="nav('settingsPage')" style="opacity:0.6;">Settings</button>
+   </div>
+
+   <div id="settingsPage" class="section">
+        <div style="display:flex; gap:10px; margin-bottom:15px;"><button onclick="nav('mainPage')" class="back-btn">Back</button><h3>Settings</h3></div>
+        <select id="themeSelect">
+            <option value="default">Default Dark</option>
+            <option value="blue-aura">Blue Aura</option>
+            <option value="sakura">Sakura</option>
+            <option value="hacker">Hacker</option>
+        </select>
+        <div id="lightToggleRow" style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); padding:15px; border:1px solid var(--border); margin-top:10px;">
+            <span>Light Mode (Default Only)</span>
+            <label id="lightSwitchLabel" class="switch">
+                <input type="checkbox" id="lightToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+   </div>
+
+   <div id="frogiePage" class="section">
+      <div style="display:flex; gap:10px;"><button onclick="nav('mainPage')" class="back-btn">Back</button><input id="searchFrogie" placeholder="Filter Arcade..." oninput="filterList('frogieList', this.value)"></div>
+      <div id="frogieList"></div>
+   </div>
+
+   <div id="gamesPage" class="section">
+      <div style="display:flex; gap:10px;"><button onclick="nav('mainPage')" class="back-btn">Back</button><input id="searchGames" placeholder="Filter Games..." oninput="filterList('gamesList', this.value)"></div>
+      <div id="gamesList"></div>
+   </div>
+
+   <div id="bookmarkPage" class="section">
+      <div style="display:flex; gap:10px;"><button onclick="nav('mainPage')" class="back-btn">Back</button><h3>Bookmarks</h3></div>
+      <div id="bookmarkList"></div>
+      <div style="display:flex; gap:8px;"><input id="bmName" placeholder="Name"><input id="bmUrl" placeholder="URL"><button id="addBookmark" style="width:100px;">Add</button></div>
+   </div>
+
+   <div id="cloakPage" class="section">
+        <div style="display:flex; gap:10px; margin-bottom:15px;"><button onclick="nav('mainPage')" class="back-btn">Back</button><h3>Cloaking</h3></div>
+        <input id="cloakName" placeholder="Tab Name" value="Classes">
+        <input id="cloakIcon" placeholder="Favicon Link" value="https://www.gstatic.com/classroom/favicon.png">
+        <button id="applyCloak">Update Identity</button>
+        <button id="resetCloak" style="background:#444; border:none; box-shadow:none;">Reset</button>
+        <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+        <button id="abCloakBtn">Launch about:blank Stealth</button>
+   </div>
+</div>
+
+<script>
+const PASSWORD = "aidensucksdih";
+const tips = ["Aiden got nothing on this", "Why does Aiden thinks he's in the friend group?", "GoGuardian got nothing on this", "I'd cook y'all in Roblox Rivals"];
+let lastTipIndex = -1;
+let animationId;
+let currentBmIdx = -1;
+
+/* --- STORAGE & DATA --- */
+let bookmarks = JSON.parse(localStorage.getItem("lair_bookmarks")) || [];
+
+const games = [
+    { label: "ChingMing's Emulator", url: "https://ching-mings-emulator-3r6sz5z8z-ching-ming-s-team.vercel.app/" },
+    { label: "NautilusOS", url: "https://studycom-mu.vercel.app" },
+    { label: "Bloxd", url: "https://bloxd.io" },
+    { label: "EaglerCraft", url: "https://eaglercraft.com" },
+    { label: "Challenge Rush", url: "https://challengerush.com" },
+    { label: "Slope", url: "https://slopeonline.online" }
+    
+    
+];sss
+
+const frogieLinks = [
+   { label: "Arcade Instance 1", url: "https://brooklyn.foundation" },
+   { label: "Arcade Instance 2", url: "https://parkviewpylusd.org" },
+   { label: "Arcade Instance 3", url: "https://denisonisd.org" },
+   { label: "Arcade Instance 4", url: "https://gloverschool.org" },
+   { label: "Arcade Instance 5", url: "https://phi.bz" },
+   { label: "Arcade Instance 6", url: "https://play.frogiee1.org" },
+   { label: "Arcade Instance 7", url: "https://play.frogiee1.net/" },
+   { label: "Arcade Instance 8", url: "https://larp.now" },
+   { label: "Arcade Instance 9", url: "https://highschoolmathteachers.com" },
+   { label: "Arcade Instance 10", url: "https://larp.foundation" },
+   { label: "Arcade Instance 11", url: "https://vallejocharterschool.org" },
+   { label: "Arcade Instance 12", url: "https://trinitypreschoolmp.org" },
+   { label: "Arcade Instance 13", url: "https://ixl.rocks" },
+   { label: "Arcade Instance 14", url: "https://ixl.works" },
+   { label: "Arcade Instance 15", url: "https://smdpschool.org" },
+   { label: "Arcade Instance 16", url: "https://oldmillschool.org" },
+   { label: "Arcade Instance 17", url: "https://dash.learnenglishinmerton.org" },
+   { label: "Arcade Instance 18", url: "https://frogiesarcade.net" },
+   { label: "Arcade Instance 19", url: "https://goguardian-is.verymad.net" },
+   { label: "Arcade Instance 20", url: "https://frogiesarcade.xyz" }
+];
+
+const bootMessages = [
+    "D1MWIT_BIOS v4.02 Initializing...",
+    "CPU: Ching-Ming Intel Celeron detected.",
+    "GoGuardian detection: FAILED.",
+    "Searching for kernel extensions...",
+    "Injecting stealth scripts into kernel...",
+    "Bypassing firewall protocols...",
+    "Mounting /dev/lair/games...",
+    "Loading arcade instances (20/20)...",
+    "Verifying Aiden's skill level... ERROR: NOTHING FOUND.",
+    "Syncing with local storage...",
+    "Setting up custom context menus...",
+    "Establishing secure WebSocket connection...",
+    "Checking for G-Suite restrictions... CLEARED.",
+    "Applying CSS theme parameters...",
+    "BOOT SEQUENCE FINISHED.",
+    "SYSTEM READY."
+];
+
+/* --- BOOT SYSTEM --- */
+function initBoot() {
+    const log = document.getElementById("bootLog");
+    const bar = document.getElementById("bootBar");
+    const percText = document.getElementById("bootPercent");
+    let currentLine = 0;
+    
+    window.bootInterval = setInterval(() => {
+        if (currentLine < bootMessages.length) {
+            const div = document.createElement("div");
+            div.textContent = "> " + bootMessages[currentLine];
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+            let p = Math.floor(((currentLine + 1) / bootMessages.length) * 100);
+            bar.style.width = p + "%";
+            percText.textContent = p + "%";
+            currentLine++;
+        } else { finishBoot(); }
+    }, 280);
+}
+
+function finishBoot() {
+    clearInterval(window.bootInterval);
+    const boot = document.getElementById("bootScreen");
+    if (boot.style.display === "none") return;
+    boot.classList.add("fade-out");
+    setTimeout(() => {
+        boot.style.display = "none";
+        document.getElementById("passwordOverlay").classList.add("visible");
+        document.getElementById("passInput").focus();
+    }, 800);
+}
+
+/* --- SEARCH FILTER LOGIC --- */
+function filterList(containerId, query) {
+    const container = document.getElementById(containerId);
+    const buttons = container.getElementsByTagName('button');
+    const lowerQuery = query.toLowerCase();
+
+    for (let i = 0; i < buttons.length; i++) {
+        const text = buttons[i].textContent.toLowerCase();
+        if (text.includes(lowerQuery)) {
+            buttons[i].style.display = "";
+        } else {
+            buttons[i].style.display = "none";
+        }
+    }
+}
+
+/* --- CLOAKING --- */
+document.getElementById("applyCloak").onclick = () => {
+    const name = document.getElementById("cloakName").value;
+    const icon = document.getElementById("cloakIcon").value;
+    document.title = name;
+    document.getElementById("tabTitle").textContent = name;
+    document.getElementById("favicon").href = icon;
+    localStorage.setItem("lair_cloakName", name);
+    localStorage.setItem("lair_cloakIcon", icon);
+};
+
+document.getElementById("abCloakBtn").onclick = () => {
+    const url = window.location.href;
+    const win = window.open("about:blank", "_blank");
+    if (win) {
+        win.document.body.style.margin = "0";
+        const iframe = win.document.createElement("iframe");
+        iframe.style = "border:none;width:100%;height:100vh;";
+        iframe.src = url;
+        win.document.body.appendChild(iframe);
+        window.location.replace("https://classroom.google.com");
+    }
+};
+
+/* --- BOOKMARKS & CONTEXT MENU --- */
+function renderBms() {
+    const c = document.getElementById("bookmarkList");
+    c.innerHTML = "";
+    bookmarks.forEach((bm, i) => {
+        const b = document.createElement("button");
+        b.textContent = bm.label;
+        b.onclick = () => openP(bm.url);
+        b.oncontextmenu = (e) => {
+            e.preventDefault();
+            currentBmIdx = i;
+            const menu = document.getElementById("customMenu");
+            menu.style.display = "block";
+            menu.style.left = e.pageX + "px";
+            menu.style.top = e.pageY + "px";
+        };
+        c.appendChild(b);
+    });
+}
+
+document.getElementById("addBookmark").onclick = () => {
+    const n = document.getElementById("bmName").value;
+    const u = document.getElementById("bmUrl").value;
+    if (n && u) {
+        bookmarks.push({ label: n, url: u });
+        localStorage.setItem("lair_bookmarks", JSON.stringify(bookmarks));
+        renderBms();
+    }
+};
+
+document.getElementById("delBmBtn").onclick = () => {
+    if (currentBmIdx > -1) {
+        bookmarks.splice(currentBmIdx, 1);
+        localStorage.setItem("lair_bookmarks", JSON.stringify(bookmarks));
+        renderBms();
+    }
+};
+
+/* --- CORE LOGIN & NAV --- */
+document.getElementById("loginBtn").onclick = () => {
+    const input = document.getElementById("passInput").value;
+    const err = document.getElementById("errorMsg");
+    if(input === PASSWORD) {
+        err.style.visibility = "hidden";
+        document.getElementById("passwordOverlay").classList.add("swipe-up");
+        document.getElementById("appContainer").style.display = "block";
+    } else { 
+        err.style.visibility = "visible"; 
+        document.getElementById("passInput").value = "";
+    }
+};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        const active = document.activeElement;
+        if (document.getElementById("bootScreen").style.display !== "none") { finishBoot(); return; }
+        if (document.getElementById("passwordOverlay").classList.contains("visible") && !document.getElementById("passwordOverlay").classList.contains("swipe-up")) { document.getElementById("loginBtn").click(); return; }
+        if (active.id === "customUrl") document.getElementById("openCustom").click();
+    }
+});
+
+function openP(u) {
+    const win = window.open("about:blank", "_blank");
+    win.document.body.style.margin = "0";
+    const iframe = win.document.createElement("iframe");
+    iframe.style = "border:none;width:100%;height:100vh;";
+    iframe.src = u.startsWith("http") ? u : "https://" + u;
+    win.document.body.appendChild(iframe);
+}
+
+function nav(id) {
+    const s = document.getElementById("transitionScreen");
+    let idx; do { idx = Math.floor(Math.random()*tips.length); } while(idx === lastTipIndex);
+    lastTipIndex = idx; document.getElementById("transitionTip").textContent = tips[idx];
+    s.style.display = "flex";
+    setTimeout(() => { 
+        s.style.display="none"; 
+        document.querySelectorAll('.app > div').forEach(x => x.style.display = "none");
+        const t = document.getElementById(id); 
+        t.style.display = (id === "mainPage") ? "block" : "flex";
+        if(id === 'frogiePage') renderList(frogieLinks, 'frogieList');
+        if(id === 'gamesPage') renderList(games, 'gamesList');
+        if(id === 'bookmarkPage') renderBms();
+    }, 1000);
+}
+
+function renderList(l, id) {
+    const c = document.getElementById(id); c.innerHTML = "";
+    l.forEach(i => {
+        const b = document.createElement("button");
+        b.textContent = i.label; b.onclick = () => openP(i.url);
+        c.appendChild(b);
+    });
+}
+
+/* --- VISUAL THEME ENGINE --- */
+const canvas = document.getElementById("themeCanvas");
+const ctx = canvas.getContext("2d");
+
+function initThemeAnims(theme) {
+    cancelAnimationFrame(animationId);
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    
+    if (theme === "hacker") {
+        const cols = canvas.width / 14, drops = Array(Math.floor(cols)).fill(1);
+        function drawHacker() {
+            ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(0,0,canvas.width, canvas.height);
+            ctx.fillStyle = "#0f0"; ctx.font = "14px monospace";
+            drops.forEach((y, i) => {
+                ctx.fillText(Math.floor(Math.random()*2), i*14, y*14);
+                if(y*14 > canvas.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
+            });
+            animationId = requestAnimationFrame(drawHacker);
+        }
+        drawHacker();
+    } else if (theme === "sakura") {
+        const leaves = Array.from({length: 45}, () => ({x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*5+2, s: Math.random()*1.2+0.5, o: Math.random()*0.6+0.4, w: Math.random()*0.02}));
+        function drawSakura() {
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            leaves.forEach(l => {
+                ctx.beginPath(); 
+                ctx.ellipse(l.x, l.y, l.r, l.r*0.6, Math.sin(l.y/50), 0, Math.PI*2);
+                ctx.fillStyle = `rgba(255, 183, 197, ${l.o})`; ctx.fill();
+                l.y += l.s; l.x += Math.sin(l.y/30);
+                if(l.y > canvas.height) l.y = -20;
+            });
+            animationId = requestAnimationFrame(drawSakura);
+        }
+        drawSakura();
+    } else if (theme === "blue-aura") {
+        const fires = Array.from({length: 40}, () => ({x: Math.random()*canvas.width, y: canvas.height + Math.random()*100, size: Math.random()*60+30, speed: Math.random()*2.5+1.2}));
+        function drawFire() {
+            ctx.fillStyle = "rgba(0,8,16,0.2)"; ctx.fillRect(0,0,canvas.width, canvas.height);
+            fires.forEach(f => {
+                const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.size);
+                grad.addColorStop(0, "rgba(0, 229, 255, 0.7)"); grad.addColorStop(1, "transparent");
+                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(f.x, f.y, f.size, 0, Math.PI*2); ctx.fill();
+                f.y -= f.speed; f.x += Math.sin(f.y/40)*3;
+                if(f.y < -f.size) { f.y = canvas.height + f.size; f.x = Math.random()*canvas.width; }
+            });
+            animationId = requestAnimationFrame(drawFire);
+        }
+        drawFire();
+    }
+}
+
+document.getElementById("themeSelect").onchange = (e) => {
+    const val = e.target.value;
+    document.body.setAttribute("data-theme", val);
+    if(val !== "default") {
+        document.getElementById("lightToggle").checked = false;
+        document.body.setAttribute("data-light", "false");
+        document.getElementById("lightToggleRow").classList.add("switch-locked");
+    } else { document.getElementById("lightToggleRow").classList.remove("switch-locked"); }
+    initThemeAnims(val);
+};
+
+document.getElementById("lightToggle").onchange = (e) => { document.body.setAttribute("data-light", e.target.checked); };
+document.getElementById("openCustom").onclick = () => openP(document.getElementById("customUrl").value);
+window.onclick = () => document.getElementById("customMenu").style.display = "none";
+
+window.onload = () => {
+    initBoot();
+    const cN = localStorage.getItem("lair_cloakName");
+    const cI = localStorage.getItem("lair_cloakIcon");
+    if(cN) { document.title = cN; document.getElementById("tabTitle").textContent = cN; }
+    if(cI) document.getElementById("favicon").href = cI;
+};
+</script>
+</body>
+</html>
