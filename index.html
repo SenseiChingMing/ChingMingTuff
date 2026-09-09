@@ -146,7 +146,7 @@ input:checked + .slider:before { transform: translateX(24px); background-color: 
 
 <div class="app" id="appContainer">
    <div id="mainPage">
-      <h2 style="letter-spacing:6px; text-align: center;">CHINGMING'S LAIR</h2>
+      <h2 style="letter-spacing:6px; text-align: center;">ChingMing'S LAIR</h2>
       <input id="customUrl" type="text" placeholder="Enter Site URL (e.g. google.com)">
       <button id="openCustom">Launch Site</button>
       <hr style="border:0; border-top:1px solid var(--border); margin: 25px 0;">
@@ -212,15 +212,15 @@ let currentBmIdx = -1;
 let bookmarks = JSON.parse(localStorage.getItem("lair_bookmarks")) || [];
 
 const games = [
-    { label: "ChingMing's Emulator", url: "https://ching-mings-emulator-3r6sz5z8z-ching-ming-s-team.vercel.app/" },
+    { label: "ChingMing's Emulator", url: "https://ching-mings-emulator.vercel.app" },
+    { label: "Now.gg", url: "https://nowgg.fun" },
+    { label: "Now.gg 2", url: "https://nowgg.lol" },
     { label: "NautilusOS", url: "https://studycom-mu.vercel.app" },
     { label: "Bloxd", url: "https://bloxd.io" },
     { label: "EaglerCraft", url: "https://eaglercraft.com" },
-    { label: "Challenge Rush", url: "https://challengerush.com" },
+    { label: "Dashmetry", url: "https://dashmetry.com" },
     { label: "Slope", url: "https://slopeonline.online" }
-    
-    
-];sss
+];
 
 const frogieLinks = [
    { label: "Arcade Instance 1", url: "https://brooklyn.foundation" },
@@ -247,7 +247,7 @@ const frogieLinks = [
 
 const bootMessages = [
     "D1MWIT_BIOS v4.02 Initializing...",
-    "CPU: Ching-Ming Intel Celeron detected.",
+    "CPU: Chromebook Intel Celeron detected.",
     "GoGuardian detection: FAILED.",
     "Searching for kernel extensions...",
     "Injecting stealth scripts into kernel...",
